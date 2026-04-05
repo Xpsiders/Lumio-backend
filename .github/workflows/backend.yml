@@ -57,10 +57,10 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run migrations
-        run: python manage.py migrate --settings=config.settings_test
+        run: python manage.py migrate
 
       - name: Run tests
-        run: pytest --settings=config.settings_test
+        run: pytest
 
   deploy:
     needs: test
