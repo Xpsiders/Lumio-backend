@@ -5,17 +5,33 @@ DEBUG = False
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 
-# CORS Configuration - ADD ALL OF THESE:
+# CORS Configuration - IMPROVED VERSION
 CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'False') == 'True'
-CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
 
-# Remove any empty strings from CORS_ALLOWED_ORIGINS
-CORS_ALLOWED_ORIGINS = [origin.strip() for origin in CORS_ALLOWED_ORIGINS if origin.strip()]
+# Get CORS origins and properly validate them
+CORS_ALLOWED_ORIGINS = []
+if not CORS_ALLOW_ALL_ORIGINS:
+    raw_origins = os.environ.get('CORS_ALLOWED_ORIGINS', '')
+    if raw_origins:
+        # Split by comma and clean up
+        origins = [origin.strip() for origin in raw_origins.split(',') if origin.strip()]
+        
+        # Validate each origin has a scheme
+        for origin in origins:
+            if origin.startswith(('http://', 'https://')):
+                CORS_ALLOWED_ORIGINS.append(origin)
+            else:
+                # Skip invalid origins to avoid errors
+                print(f"Warning: Skipping invalid CORS origin (missing scheme): {origin}")
 
+# If no valid origins and not allowing all, set a safe default
+if not CORS_ALLOW_ALL_ORIGINS and not CORS_ALLOWED_ORIGINS:
+    # Default to nothing in production (most secure)
+    CORS_ALLOWED_ORIGINS = []
+    print("Warning: No valid CORS_ALLOWED_ORIGINS set. CORS will block all cross-origin requests.")
 
 CORS_ALLOW_CREDENTIALS = True
 
-# Explicitly define these - they're not being inherited properly
 CORS_ALLOW_METHODS = [
     'DELETE',
     'GET',
@@ -37,9 +53,16 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
-# Also add CSRF trusted origins for POST requests
-CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',')
-CSRF_TRUSTED_ORIGINS = [origin for origin in CSRF_TRUSTED_ORIGINS if origin]
+# CSRF Configuration - with validation
+CSRF_TRUSTED_ORIGINS = []
+raw_csrf_origins = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
+if raw_csrf_origins:
+    csrf_origins = [origin.strip() for origin in raw_csrf_origins.split(',') if origin.strip()]
+    for origin in csrf_origins:
+        if origin.startswith(('http://', 'https://')):
+            CSRF_TRUSTED_ORIGINS.append(origin)
+        else:
+            print(f"Warning: Skipping invalid CSRF origin (missing scheme): {origin}")
 
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
